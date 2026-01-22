@@ -1,15 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "Resume ATS Scorer & Cover Letter Generator",
+  "name": "Resume Analyzer",
   "version": "1.0.0",
-  "description": "ATS Resume Scorer with Job Matching, Resume Analysis, and AI-Powered Cover Letter Generation",
+  "description": "Resume Analyzer with Job Matching, ATS Scoring, Resume Analysis, and AI-Powered Cover Letter Generation",
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "downloads",
+    "tabs",
+    "contextMenus"
   ],
   "host_permissions": [
-    "https://api.openai.com/*"
+    "https://api.openai.com/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -36,7 +40,11 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["lib/pdf.worker.min.js"],
+      "resources": [
+        "lib/pdf.worker.min.js",
+        "prompts/*.txt",
+        "template/*.pdf"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

@@ -1,167 +1,402 @@
-# Resume ATS Scorer & Cover Letter Generator Chrome Extension
+# Resume Analyzer Chrome Extension
 
-A comprehensive Chrome extension for resume analysis, ATS scoring, job matching, and AI-powered cover letter generation using OpenAI's GPT models.
+[![javascript](https://img.shields.io/badge/-JavaScript_ES6+-yellow?logo=javascript&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![chrome-extension](https://img.shields.io/badge/Chrome_Extension-Manifest_V3-4285F4?logo=google-chrome&logoColor=white)](https://developer.chrome.com/docs/extensions/)
+[![openai](https://img.shields.io/badge/OpenAI-GPT_5_Mini-412991?logo=openai&logoColor=white)](https://openai.com/)
+[![gemini](https://img.shields.io/badge/Google-Gemini_2.5_Flash-4285F4?logo=google&logoColor=white)](https://gemini.google.com/)
+![license](https://img.shields.io/badge/License-MIT-green?logo=mit&logoColor=white)
 
-## Features
+A comprehensive Chrome extension for resume analysis, ATS scoring, job matching, and AI-powered cover letter generation using OpenAI GPT and Google Gemini models.
 
-1. **ATS Resume Scoring**
-   - Upload PDF resume
-   - Get ATS score (0-100) with detailed feedback
-   - Identifies strengths and areas for improvement
+> **Note**: This entire repository is generated using AI-powered coding (AI vibe coding), demonstrating the capabilities of AI-assisted development.
 
-2. **Job Posting Match Analysis**
-   - Analyze current webpage for job postings
-   - Calculate match percentage between resume and job posting
-   - Get matched/missing skills and recommendations
+## 📌 Features
 
-3. **Resume Analysis & Improvements**
-   - Get detailed improvement suggestions by section
-   - Download improved sections as PDF
+- [x] **ATS Resume Scoring** - Get industry-standard ATS score (0-100) with detailed feedback
+- [x] **Job Match Analysis** - Calculate match percentage between resume and job posting
+- [x] **In-depth Resume Analysis** - Detailed improvement suggestions by section with examples
+- [x] **AI Cover Letter Generator** - Generate personalized cover letters (200-250 words, single page)
+- [x] **Multi-Provider AI Support** - Choose between OpenAI (GPT-5 Mini, GPT-4o, O1, O3, etc.) or Google Gemini (Gemini 2.5 Flash, Gemini 3 Pro, etc.)
+- [x] **Text Selection on Webpages** - Right-click context menu to analyze selected job postings
+- [x] **PDF Resume Upload** - Drag & drop or click to upload PDF resumes
+- [x] **Dark/Light Theme** - Beautiful themes with preference persistence
+- [x] **Local Storage** - All data stored locally, never shared with third parties
 
-4. **AI Cover Letter Generator**
-   - Generate personalized cover letters based on resume + job posting
-   - Support for custom theme/format (upload sample cover letter)
-   - Download generated cover letter as PDF
+## 📁 Project Structure
 
-5. **Dark/Light Theme**
-   - Beautiful dark theme (default)
-   - Light theme option
-   - Theme preference saved
+The directory structure of the project looks like this:
 
-## Installation
+```
+resume-analyzer-extension/
+├── background.js              # Service worker for extension lifecycle
+├── content.js                 # Content script for webpage interaction
+├── popup.html                 # Main extension popup UI
+├── popup.css                  # Styles with dark/light theme support
+├── popup.js                   # Main extension logic and AI integration
+├── utils.js                   # Utility functions
+├── manifest.json              # Extension manifest (Manifest V3)
+├── LICENSE                    # MIT License
+├── README.md                  # This file
+├── QUICK_START.md            # Quick start guide
+├── INSTALL_PDFJS.md          # PDF.js installation guide
+├── icons/                     # Extension icons
+│   ├── icon16.png
+│   ├── icon48.png
+│   └── icon128.png
+├── lib/                       # Third-party libraries
+│   ├── pdf.min.js            # PDF.js for PDF text extraction
+│   ├── pdf.worker.min.js     # PDF.js worker
+│   ├── pdfjs-setup.js        # PDF.js configuration
+│   └── jspdf.umd.min.js      # jsPDF for PDF generation
+├── prompts/                   # AI prompt templates
+│   ├── ats-score-system.txt
+│   ├── resume-analysis.txt
+│   ├── section-improvements.txt
+│   └── cover-letter-generation.txt
+└── template/                  # Cover letter template
+    └── cover_letter_template.pdf
+```
 
-### Step 1: Generate Icons (First Time Only)
+## 🏗️ Architecture
 
-The extension needs icon files. Placeholder icons are included, but for better appearance:
+### System Architecture
 
-1. Open `create_icons.html` in your browser
-2. Click the download buttons for each icon size (16x16, 48x48, 128x128)
-3. Save the downloaded PNG files to the `icons/` folder, replacing the placeholder files
+```mermaid
+graph TB
+    A[Chrome Browser] --> B[Extension Popup]
+    A --> C[Content Script]
+    A --> D[Background Service Worker]
+    
+    B --> E[User Interface]
+    B --> F[PDF Upload Handler]
+    B --> G[AI API Client]
+    
+    C --> H[Text Selection Handler]
+    C --> I[Context Menu Integration]
+    C --> J[Page Content Extractor]
+    
+    D --> K[Context Menu Manager]
+    D --> L[Message Router]
+    D --> M[Storage Manager]
+    
+    G --> N[OpenAI API]
+    G --> O[Google Gemini API]
+    
+    F --> P[PDF.js Library]
+    P --> Q[Text Extraction]
+    
+    B --> R[Chrome Storage API]
+    R --> S[Local Data Persistence]
+    
+    style B fill:#4285F4,color:#fff
+    style C fill:#4285F4,color:#fff
+    style D fill:#4285F4,color:#fff
+    style N fill:#412991,color:#fff
+    style O fill:#4285F4,color:#fff
+```
 
-Alternatively, you can create custom icons manually as PNG files:
-- `icons/icon16.png` (16x16 pixels)
-- `icons/icon48.png` (48x48 pixels)  
-- `icons/icon128.png` (128x128 pixels)
+### Data Flow Architecture
 
-### Step 2: Load Extension
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant P as Popup UI
+    participant CS as Content Script
+    participant BG as Background Worker
+    participant AI as AI API (OpenAI/Gemini)
+    participant ST as Chrome Storage
+    
+    U->>P: Upload Resume PDF
+    P->>P: Extract Text (PDF.js)
+    P->>ST: Save Resume Data
+    
+    U->>CS: Select Text on Page
+    CS->>BG: Send Selected Text
+    BG->>ST: Store Selected Text
+    BG->>P: Notify Extension Open
+    
+    U->>P: Click Analyze/Generate
+    P->>ST: Load Resume & Job Data
+    P->>AI: Send Request with Prompt
+    AI->>P: Return Analysis Result
+    P->>P: Display Results
+    P->>ST: Save Results
+```
 
-#### Option 1: Load Unpacked Extension (Development)
+### Component Interaction Diagram
+
+```mermaid
+graph LR
+    subgraph "Extension Components"
+        A[popup.js]
+        B[content.js]
+        C[background.js]
+        D[popup.html]
+    end
+    
+    subgraph "External Services"
+        E[OpenAI API]
+        F[Gemini API]
+    end
+    
+    subgraph "Libraries"
+        G[PDF.js]
+        H[jsPDF]
+    end
+    
+    subgraph "Storage"
+        I[Chrome Storage]
+    end
+    
+    A -->|Uses| G
+    A -->|Uses| H
+    A -->|Calls| E
+    A -->|Calls| F
+    A -->|Reads/Writes| I
+    A -->|Manipulates| D
+    
+    B -->|Injects into| J[Web Pages]
+    B -->|Sends Messages| C
+    B -->|Receives Messages| A
+    
+    C -->|Manages| K[Context Menus]
+    C -->|Routes Messages| A
+    C -->|Routes Messages| B
+    C -->|Reads/Writes| I
+    
+    style A fill:#4CAF50,color:#fff
+    style B fill:#2196F3,color:#fff
+    style C fill:#FF9800,color:#fff
+    style E fill:#412991,color:#fff
+    style F fill:#4285F4,color:#fff
+```
+
+### AI Processing Flow
+
+```mermaid
+flowchart TD
+    A[User Action] --> B{Action Type}
+    B -->|ATS Score| C[Load ATS Prompt]
+    B -->|Match Analysis| D[Load Match Prompt]
+    B -->|Resume Analysis| E[Load Analysis Prompt]
+    B -->|Cover Letter| F[Load Cover Letter Prompt]
+    
+    C --> G[Prepare Request]
+    D --> G
+    E --> G
+    F --> G
+    
+    G --> H{Provider Selected?}
+    H -->|OpenAI| I[OpenAI API Call]
+    H -->|Gemini| J[Gemini API Call]
+    
+    I --> K[Parse JSON Response]
+    J --> K
+    
+    K --> L[Display Results]
+    L --> M[Save to Storage]
+    
+    style I fill:#412991,color:#fff
+    style J fill:#4285F4,color:#fff
+    style L fill:#4CAF50,color:#fff
+```
+
+## 🚀 Getting Started
+
+### Step 1: Clone the repository
+
+```bash
+git clone <repository-url>
+cd resume-analyzer-extension
+```
+
+### Step 2: Load the extension in Chrome
 
 1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in top right)
-3. Click "Load unpacked"
-4. Select the extension directory (`session1`)
+2. Enable **Developer mode** (toggle in top right)
+3. Click **"Load unpacked"**
+4. Select the `resume-analyzer-extension` directory
 5. The extension should now appear in your extensions list
 
-#### Option 2: Package Extension
+### Step 3: Configure API Key
 
-1. In `chrome://extensions/`, click "Pack extension"
-2. Select the extension directory
-3. Install the generated `.crx` file
+1. **Get API Key:**
+   - For OpenAI: Sign up at [OpenAI Platform](https://platform.openai.com/) and create an API key
+   - For Gemini: Get API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-## Setup
-
-1. **Get OpenAI API Key**
-   - Sign up at [OpenAI](https://platform.openai.com/)
-   - Navigate to API Keys section
-   - Create a new API key (starts with `sk-`)
-
-2. **Configure Extension**
+2. **Set up in Extension:**
    - Click the extension icon in Chrome toolbar
-   - Enter your OpenAI API key
-   - Click "Save"
-   - Your API key is stored locally and never shared
+   - Select your AI provider (OpenAI or Gemini)
+   - Choose your preferred model from the dropdown
+   - Enter your API key
+   - Click **"Save"**
 
-## Usage
+### Step 4: Start Using
+
+1. **Upload Resume:**
+   - Click extension icon
+   - Upload your resume PDF (drag & drop or click to select)
+
+2. **Analyze Job Posting:**
+   - Navigate to a job posting page
+   - Right-click on selected text → Choose "ATS Score for the selected Job" or "Generate Cover Letter"
+   - Or use the "Select Text on Page" button in the extension
+
+3. **View Results:**
+   - ATS Score with detailed feedback
+   - Match Score analysis
+   - In-depth Resume Analysis
+   - Generated Cover Letter (downloadable as PDF)
+
+## 📝 Usage Examples
 
 ### ATS Resume Scoring
 
-1. Click the extension icon
-2. Upload your resume PDF (drag & drop or click to select)
-3. ATS score will be calculated automatically
-4. View score, feedback, strengths, and improvements
+1. Upload your resume PDF
+2. Select or paste job description
+3. Click "Get ATS Score for This Job"
+4. View score, strength label, and collapsible improvement sections
 
-### Job Posting Match
+### Job Match Analysis
 
-1. Navigate to a job posting page (LinkedIn, Indeed, company website, etc.)
-2. Click the extension icon
-3. Click "Analyze Current Page for Job Posting"
-4. View match percentage and detailed analysis
-
-### Resume Analysis
-
-1. Upload your resume (if not already uploaded)
-2. Click "Analyze Resume for Improvements"
-3. Review suggestions by section
-4. Download improved sections as PDF
+1. Upload resume
+2. Select job posting text (right-click or use extension button)
+3. Click "Match Score" analysis
+4. See matched/missing skills with detailed examples
 
 ### Cover Letter Generation
 
-1. Upload your resume
-2. Analyze a job posting (see above)
-3. (Optional) Upload a sample cover letter to match its format
-4. Click "Generate Cover Letter"
-5. Review and download as PDF
+1. Upload resume
+2. Select job posting
+3. Click "Generate Cover Letter"
+4. Download as PDF (single page, 200-250 words)
 
-## Requirements
+## 🔧 Configuration
+
+### Supported AI Models
+
+**OpenAI Models:**
+- gpt-5-mini (default)
+- gpt-4o, gpt-4o-mini
+- gpt-4.1, gpt-4.1-mini, gpt-4.1-nano
+- gpt-4.5-preview variants
+- o1, o1-preview, o1-mini
+- o3, o3-mini
+- o4-mini
+- gpt-5 variants
+
+**Gemini Models:**
+- gemini-2.5-flash (default)
+- gemini-3-pro-preview
+- gemini-3-flash-preview
+- gemini-2.5-flash-lite
+- gemini-2.5-pro
+
+### Customization
+
+- **Prompts**: Edit files in `prompts/` directory to customize AI behavior
+- **Theme**: Toggle between dark/light theme in extension popup
+- **Storage**: All data stored locally in Chrome storage
+
+## 📊 Features in Detail
+
+### ATS Score Section
+- Circular progress indicator (0-100)
+- Strength label (EXCELLENT/GOOD/AVERAGE/POOR)
+- Section-wise analysis with issue counts
+- Collapsible improvement points
+- Example content for each section
+
+### Match Score Section
+- Similar format to ATS Score
+- Focuses on job-resume matching
+- Detailed mismatch analysis
+- Improvement suggestions with examples
+
+### In-depth Resume Analysis
+- Comprehensive section-by-section analysis
+- Improvement points with details
+- Example content for improvements
+- Collapsible sections for easy navigation
+
+## 🛠️ Technical Details
+
+### Technologies Used
+
+- **JavaScript (ES6+)** - Core logic
+- **Chrome Extension APIs** - Manifest V3
+- **PDF.js** - PDF text extraction
+- **jsPDF** - PDF generation
+- **OpenAI API** - GPT models
+- **Google Gemini API** - Gemini models
+- **Chrome Storage API** - Local data persistence
+
+### Browser Compatibility
+
+- Chrome (latest version recommended)
+- Edge (Chromium-based)
+- Other Chromium-based browsers
+
+## 📋 Requirements
 
 - Chrome browser (latest version recommended)
-- OpenAI API key with access to GPT-4 or GPT-4o models
+- AI API key (OpenAI or Google Gemini)
 - Internet connection (for API calls)
+- PDF resume files (with selectable text for best results)
 
-## File Structure
+## 🔒 Privacy & Security
 
-```
-session1/
-├── manifest.json          # Extension manifest
-├── popup.html            # Main UI
-├── popup.css             # Styles with dark/light theme
-├── popup.js              # Main functionality
-├── background.js         # Service worker
-├── content.js            # Content script for job posting detection
-├── utils.js              # Utility functions
-├── icons/                # Extension icons
-└── README.md            # This file
-```
+- **Local Storage**: All data stored locally in Chrome storage
+- **No Third-Party Sharing**: Data only sent to selected AI provider (OpenAI/Gemini)
+- **API Key Security**: API keys stored locally, never shared
+- **No Tracking**: Extension does not track user behavior
 
-## Notes
+## 🐛 Troubleshooting
 
-- **PDF Extraction**: The extension attempts to extract text from PDFs. For better results, you may need to integrate a PDF parsing library like pdf.js. Currently, it uses a fallback method.
+### Common Issues
 
-- **API Costs**: This extension uses OpenAI's API, which incurs costs based on usage. Monitor your API usage at [OpenAI Dashboard](https://platform.openai.com/usage).
+**PDF not extracting text:**
+- Ensure PDF has selectable text (not just images)
+- Try copying resume text manually using "Paste Resume Text" option
 
-- **Privacy**: All data processing happens through OpenAI's API. Your resume text and API key are stored locally in Chrome's storage and never sent to third parties (except OpenAI for processing).
+**API errors:**
+- Verify API key is correct and has sufficient credits
+- Check internet connection
+- Ensure selected model is available in your API plan
 
-- **Job Posting Detection**: The extension uses heuristics to detect job postings. It may not work perfectly on all websites. For best results, ensure you're on a job posting page.
+**Job posting not detected:**
+- Use "Select Text on Page" button or right-click context menu
+- Ensure you're on a regular webpage (not chrome:// pages)
 
-## Troubleshooting
+**Theme not saving:**
+- Clear extension storage and try again
+- Check Chrome storage permissions
 
-- **PDF not extracting text**: Some PDFs use images or complex formatting. Try copying your resume text manually or ensure your PDF has selectable text.
+## 🚧 Future Enhancements
 
-- **Job posting not detected**: Make sure you're on the actual job posting page and the page has fully loaded. Try refreshing the page.
-
-- **API errors**: Check your API key is correct and has sufficient credits. Ensure you have access to GPT-4 models.
-
-- **Theme not saving**: Clear extension storage and try again, or check Chrome storage permissions.
-
-## Future Enhancements
-
-- [ ] Integrate pdf.js for better PDF text extraction
-- [ ] Add support for multiple resume formats (DOCX, TXT)
-- [ ] Implement resume template library
-- [ ] Add history of analyzed jobs and cover letters
-- [ ] Support for batch job analysis
+- [ ] Support for multiple resume formats (DOCX, TXT)
+- [ ] Batch job analysis
 - [ ] Export analysis reports
+- [ ] Resume template library
+- [ ] History of analyzed jobs and cover letters
+- [ ] Multi-language support
+- [ ] Integration with job boards
 
-## License
+## 📄 License
 
-This project is provided as-is for personal use.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 📞 Support
 
-For issues or questions, please check:
-1. Your OpenAI API key is valid and has credits
-2. You have internet connection
-3. The extension has necessary permissions
-4. Chrome is up to date
+For issues or questions:
+1. Check your API key is valid and has credits
+2. Ensure you have internet connection
+3. Verify the extension has necessary permissions
+4. Make sure Chrome is up to date
 
+## 🙏 Acknowledgments
+
+- OpenAI for GPT models
+- Google for Gemini models
+- PDF.js contributors
+- jsPDF contributors
