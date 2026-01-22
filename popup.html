@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume ATS Scorer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body class="dark-theme">
+  <div class="container">
+    <header>
+      <h1>Resume ATS Scorer</h1>
+      <button id="themeToggle" class="theme-toggle" title="Toggle theme">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </header>
+
+    <!-- OpenAI API Key Input -->
+    <section class="section">
+      <h2>OpenAI API Key</h2>
+      <div class="input-group">
+        <input 
+          type="password" 
+          id="apiKey" 
+          placeholder="Enter your OpenAI API key" 
+          class="input-field"
+        >
+        <button id="saveKey" type="button" class="btn btn-primary">Save</button>
+      </div>
+      <p class="help-text">Your API key is stored locally and never shared.</p>
+    </section>
+
+    <!-- Resume Upload Section -->
+    <section class="section">
+      <h2>Upload Resume</h2>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="resumeUpload" accept=".pdf" style="display: none;">
+        <div class="upload-content">
+          <span class="upload-icon">📄</span>
+          <p>Click to upload PDF resume</p>
+          <p class="upload-hint">or drag and drop</p>
+        </div>
+      </div>
+      <div style="margin-top: 12px; text-align: center;">
+        <button id="pasteTextBtn" class="btn btn-secondary" style="width: auto; padding: 8px 16px;">
+          Or Paste Resume Text
+        </button>
+      </div>
+      <div id="textInputArea" style="display: none; margin-top: 12px;">
+        <textarea 
+          id="resumeTextInput" 
+          placeholder="Paste your resume text here..." 
+          class="input-field"
+          rows="6"
+          style="width: 100%; resize: vertical; font-family: inherit;"
+        ></textarea>
+        <button id="useTextBtn" class="btn btn-primary" style="margin-top: 8px; width: 100%;">
+          Use This Text
+        </button>
+      </div>
+      <div id="resumeInfo" class="resume-info" style="display: none;"></div>
+    </section>
+
+    <!-- ATS Score Display -->
+    <section class="section" id="atsScoreSection" style="display: none;">
+      <h2>ATS Score</h2>
+      <div class="score-display">
+        <div class="score-circle" id="scoreCircle">
+          <span id="atsScore">0</span>
+          <span class="score-label">%</span>
+        </div>
+        <p id="atsFeedback" class="score-feedback"></p>
+      </div>
+    </section>
+
+    <!-- Job Match Section -->
+    <section class="section">
+      <h2>Job Posting Match</h2>
+      <button id="analyzeJob" class="btn btn-secondary" disabled>
+        Analyze Current Page for Job Posting
+      </button>
+      <div id="jobMatchResult" class="match-result" style="display: none;"></div>
+    </section>
+
+    <!-- Resume Analysis Section -->
+    <section class="section">
+      <h2>Resume Analysis</h2>
+      <button id="analyzeResume" class="btn btn-secondary" disabled>
+        Analyze Resume for Improvements
+      </button>
+      <div id="analysisResults" class="analysis-results" style="display: none;"></div>
+    </section>
+
+    <!-- Cover Letter Generator Section -->
+    <section class="section">
+      <h2>Cover Letter Generator</h2>
+      <div class="input-group">
+        <label>Cover Letter Theme (Optional)</label>
+        <input 
+          type="file" 
+          id="themeUpload" 
+          accept=".pdf,.docx" 
+          class="input-field"
+        >
+        <p class="help-text">Upload a sample cover letter (PDF/DOCX) to match its format</p>
+      </div>
+      <button id="generateCoverLetter" class="btn btn-secondary" disabled>
+        Generate Cover Letter
+      </button>
+      <div id="coverLetterResult" class="cover-letter-result" style="display: none;"></div>
+    </section>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+      <div class="spinner"></div>
+      <p id="loadingText">Processing...</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+  <script src="lib/pdf.min.js" async></script>
+</body>
+</html>
+
