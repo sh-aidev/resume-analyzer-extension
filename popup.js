@@ -1093,13 +1093,17 @@ Respond ONLY in valid JSON format with no markdown code blocks:
 function displayATSScore(result) {
   const section = document.getElementById('atsScoreSection');
   section.style.display = 'block';
-  
+
+  // Normalize score — models sometimes use different field names
+  const score = result.score ?? result.atsScore ?? result.ats_score ?? result.overallScore ?? result.overall ?? 0;
+  result.score = score;
+
   // Determine strength label and color
-  const strength = result.strength || (result.score >= 80 ? 'EXCELLENT' : result.score >= 60 ? 'GOOD' : result.score >= 40 ? 'AVERAGE' : 'POOR');
-  const strengthColor = result.score >= 80 ? '#00b894' : result.score >= 60 ? '#4a9eff' : result.score >= 40 ? '#f39c12' : '#e74c3c';
-  
+  const strength = result.strength || (score >= 80 ? 'EXCELLENT' : score >= 60 ? 'GOOD' : score >= 40 ? 'AVERAGE' : 'POOR');
+  const strengthColor = score >= 80 ? '#00b894' : score >= 60 ? '#4a9eff' : score >= 40 ? '#f39c12' : '#e74c3c';
+
   // Calculate percentage for circular progress
-  const percentage = result.score;
+  const percentage = score;
   const circumference = 2 * Math.PI * 45; // radius = 45
   const offset = circumference - (percentage / 100) * circumference;
   
@@ -1338,13 +1342,17 @@ function displayMatchScore(result) {
   const section = document.getElementById('jobMatchSection');
   section.style.display = 'block';
   document.getElementById('coverLetterSection').style.display = 'block';
-  
+
+  // Normalize score — models sometimes use different field names
+  const score = result.score ?? result.matchScore ?? result.overallScore ?? result.overall ?? result.match_score ?? 0;
+  result.score = score;
+
   // Determine strength label and color
-  const strength = result.strength || (result.score >= 80 ? 'EXCELLENT' : result.score >= 60 ? 'GOOD' : result.score >= 40 ? 'AVERAGE' : 'POOR');
-  const strengthColor = result.score >= 80 ? '#00b894' : result.score >= 60 ? '#4a9eff' : result.score >= 40 ? '#f39c12' : '#e74c3c';
-  
+  const strength = result.strength || (score >= 80 ? 'EXCELLENT' : score >= 60 ? 'GOOD' : score >= 40 ? 'AVERAGE' : 'POOR');
+  const strengthColor = score >= 80 ? '#00b894' : score >= 60 ? '#4a9eff' : score >= 40 ? '#f39c12' : '#e74c3c';
+
   // Calculate percentage for circular progress
-  const percentage = result.score;
+  const percentage = score;
   const circumference = 2 * Math.PI * 45;
   const offset = circumference - (percentage / 100) * circumference;
   
@@ -2157,7 +2165,7 @@ CRITICAL:
 
 Respond with the complete cover letter text only, formatted as a professional business letter. Use line breaks between sections. Do not include markdown formatting, code blocks, or additional commentary.`;
     
-    const coverLetter = await callOpenAI(userPrompt, 'gpt-4o', systemPrompt);
+    const coverLetter = await callOpenAI(userPrompt, null, systemPrompt);
     
     // Display cover letter
     const coverLetterResult = document.getElementById('coverLetterResult');
@@ -2221,7 +2229,8 @@ function extractJSON(response) {
   // Find JSON object boundaries
   const firstBrace = cleaned.indexOf('{');
   if (firstBrace === -1) {
-    throw new Error('No JSON object found in response');
+    console.error('[extractJSON] no JSON found. Full response:', cleaned);
+    throw new Error(`No JSON object found in response. Model returned: "${cleaned.substring(0, 300)}"`);
   }
   
   // Extract JSON by finding matching braces (handles nested objects/arrays)
@@ -2316,10 +2325,15 @@ function extractJSON(response) {
       continue;
     }
     
-    // Regular character
-    processed += char;
+    // Regular character — escape literal control characters inside strings
+    if (inString && char.charCodeAt(0) < 32) {
+      const controlEscapes = { '\n': '\\n', '\r': '\\r', '\t': '\\t', '\0': '\\u0000' };
+      processed += controlEscapes[char] || `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`;
+    } else {
+      processed += char;
+    }
   }
-  
+
   cleaned = processed;
   
   // Try parsing immediately - sometimes it just works
@@ -2428,7 +2442,7 @@ function extractJSON(response) {
       // Final error message with helpful context
       const preview = cleaned.substring(0, 500);
       const errorPos = positionMatch ? parseInt(positionMatch[1]) : -1;
-      let errorMsg = `Failed to parse JSON. ${error.message}`;
+      let errorMsg = `Failed to parse JSON. ${secondError.message}`;
       if (errorPos > 0) {
         errorMsg += `\n\nError near position ${errorPos}.`;
       }
@@ -2451,12 +2465,18 @@ async function callOpenAI(prompt, model = null, systemPrompt = null) {
     // OpenAI API call
     const messages = [];
     
+    // Determine if we need JSON before building messages
+    const isReasoningModelEarly = /^(o1|o3|o4|gpt-5)/.test(model || selectedModel);
+    const promptWantsJSON = systemPrompt && (systemPrompt.includes('JSON') || prompt.includes('JSON'));
+
     // Add system prompt if provided
     if (systemPrompt) {
-      messages.push({
-        role: 'system',
-        content: systemPrompt
-      });
+      let effectiveSystem = systemPrompt;
+      // For reasoning models, append JSON instruction since response_format won't enforce it
+      if (isReasoningModelEarly && promptWantsJSON && !systemPrompt.includes('JSON')) {
+        effectiveSystem += '\n\nYou must respond with valid JSON only. No markdown, no code blocks, no explanatory text — just the raw JSON object.';
+      }
+      messages.push({ role: 'system', content: effectiveSystem });
     } else {
       messages.push({
         role: 'system',
@@ -2471,18 +2491,21 @@ async function callOpenAI(prompt, model = null, systemPrompt = null) {
     });
     
     // Prepare request body
+    const isReasoningModel = isReasoningModelEarly;
     const requestBody = {
       model: useModel,
       messages: messages,
-      temperature: 0.7,
-      max_tokens: 2000
+      [isReasoningModel ? 'max_completion_tokens' : 'max_tokens']: 16000
     };
+    if (!isReasoningModel) {
+      requestBody.temperature = 0.7;
+    }
     
     // Add response_format for JSON responses (when system prompt indicates JSON)
-    if (systemPrompt && (systemPrompt.includes('JSON') || prompt.includes('JSON'))) {
-      if (useModel.includes('gpt-4') || useModel.includes('gpt-3.5')) {
-        requestBody.response_format = { type: 'json_object' };
-      }
+    // Reasoning models (o-series, gpt-5) follow prompt instructions and don't use json_object format
+    const wantsJSON = systemPrompt && (systemPrompt.includes('JSON') || prompt.includes('JSON'));
+    if (wantsJSON && !isReasoningModel) {
+      requestBody.response_format = { type: 'json_object' };
     }
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -2500,7 +2523,13 @@ async function callOpenAI(prompt, model = null, systemPrompt = null) {
     }
     
     const data = await response.json();
-    return data.choices[0].message.content;
+    const content = data.choices[0].message.content;
+    console.log('[callOpenAI] raw response:', content);
+    if (content === null || content === undefined) {
+      const refusal = data.choices[0].message.refusal;
+      throw new Error(refusal ? `Model refused: ${refusal}` : 'Model returned empty response (null content)');
+    }
+    return content;
   } else {
     // Gemini API call
     const contents = [];
@@ -2521,7 +2550,7 @@ async function callOpenAI(prompt, model = null, systemPrompt = null) {
       contents: contents,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 2000
+        maxOutputTokens: 16000
       }
     };
     
@@ -2544,7 +2573,12 @@ async function callOpenAI(prompt, model = null, systemPrompt = null) {
     }
     
     const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+    const candidate = data.candidates?.[0];
+    if (!candidate?.content?.parts?.[0]?.text) {
+      const blockReason = candidate?.finishReason || data.promptFeedback?.blockReason;
+      throw new Error(blockReason ? `Gemini blocked response: ${blockReason}` : 'Gemini returned empty or unexpected response structure');
+    }
+    return candidate.content.parts[0].text;
   }
 }
 
